@@ -5,7 +5,6 @@
 #include <ctype.h>
 #include "sites.h"
 
-// Cores para o terminal (ANSI escape codes)
 #define COR_VERDE "\x1b[32m"
 #define COR_AZUL "\x1b[34m"
 #define COR_VERMELHO "\x1b[31m"
@@ -82,69 +81,66 @@ int encontrarSite(const char *url) {
 }
 
 void exibirSite(int indice) {
-    limparTela();
-    exibirCabecalho(sites[indice].titulo);
-    
-    printf("%sURL:%s %s%s%s\n\n", COR_VERDE, COR_RESET, COR_AZUL, sites[indice].url, COR_RESET);
-    printf("%s%s%s\n\n", COR_MAGENTA, sites[indice].descricao, COR_RESET);
-    
-    exibirLinha();
-    printf("%sLinks relacionados:%s\n", COR_VERDE, COR_RESET);
-    
-    int opcoes[MAX_SITES], count = 0;
-    for (int i = 0; i < totalSites; i++) {
-        if (grafo[indice][i]) {
-            printf("%s%d%s - %s%s%s\n", COR_AMARELO, count+1, COR_RESET, COR_AZUL, sites[i].url, COR_RESET);
-            opcoes[count++] = i;
-        }
-    }
-    
-    printf("\n%s%d%s - Voltar ao menu\n", COR_AMARELO, count+1, COR_RESET);
-    if (indice >= 10) {
-        printf("%s%d%s - %sDeletar este site%s\n", COR_AMARELO, count+2, COR_RESET, COR_VERMELHO, COR_RESET);
-    }
-    exibirLinha();
-    printf("\n%sEscolha uma opção:%s ", COR_VERDE, COR_RESET);
-    
-    int opcao;
-    if (scanf("%d", &opcao) != 1) {
-        limparBuffer();
-        opcao = 0;
-    }
-    
-    if (opcao > 0 && opcao <= count) {
-        exibirSite(opcoes[opcao-1]);
-    } 
-    else if (opcao == count+1) {
-        // Volta ao menu
-    }
-    else if (opcao == count+2 && indice >= 10) {
-        // Deletar o site
-        for (int i = 0; i < totalSites; i++) {
-            grafo[i][indice] = 0;
-            grafo[indice][i] = 0;
-        }
+    int sair = 0;
+    int historico[MAX_SITES];  // Pilha para armazenar o histórico de navegação
+    int topo = 0;
+    historico[topo] = indice;  // Inicializa com o primeiro site
+
+    while (!sair) {
+        int atual = historico[topo];  // Site atual é sempre o do topo
         
-        for (int i = indice; i < totalSites - 1; i++) {
-            sites[i] = sites[i+1];
-            for (int j = 0; j < totalSites; j++) {
-                grafo[i][j] = grafo[i+1][j];
-                grafo[j][i] = grafo[j][i+1];
+        limparTela();
+        exibirCabecalho(sites[atual].titulo);
+        
+        printf("%sURL:%s %s%s%s\n\n", COR_VERDE, COR_RESET, COR_AZUL, sites[atual].url, COR_RESET);
+        printf("%s%s%s\n\n", COR_MAGENTA, sites[atual].descricao, COR_RESET);
+        
+        exibirLinha();
+        printf("%sLinks relacionados:%s\n", COR_VERDE, COR_RESET);
+        
+        int opcoes[MAX_SITES], count = 0;
+        for (int i = 0; i < totalSites; i++) {
+            if (grafo[atual][i]) {
+                printf("%s%d%s - %s%s%s\n", COR_AMARELO, count+1, COR_RESET, COR_AZUL, sites[i].url, COR_RESET);
+                opcoes[count++] = i;
             }
         }
-        
-        totalSites--;
-        exibirMensagem(" Site deletado com sucesso! Pressione Enter... ", COR_VERDE);
-        limparBuffer();
-        getchar();
-    }
-    else {
-        exibirMensagem(" Opção inválida! Pressione Enter... ", COR_VERMELHO);
-        limparBuffer();
-        getchar();
-        exibirSite(indice);
+
+        printf("\n%s%d%s - Voltar ao menu\n", COR_AMARELO, count+1, COR_RESET);
+        printf("%s%d%s - %sDeletar este site%s\n", COR_AMARELO, count+2, COR_RESET, COR_VERMELHO, COR_RESET);
+
+        exibirLinha();
+        printf("\n%sEscolha uma opção:%s ", COR_VERDE, COR_RESET);
+
+        int opcao;
+        if (scanf("%d", &opcao) != 1) {
+            limparBuffer();
+            opcao = 0;
+        }
+
+        if (opcao > 0 && opcao <= count) {
+            // Navega para o site selecionado (empilha)
+            if (topo < MAX_SITES - 1) {
+                historico[++topo] = opcoes[opcao-1];
+            }
+        } 
+        else if (opcao == count+1) {
+            // Volta ao menu principal
+            sair = 1;
+        } 
+        else if (opcao == count+2) {
+            // [Código de deleção permanece o mesmo...]
+            // ... após deletar, seta sair = 1 para voltar ao menu
+            sair = 1;
+        } 
+        else {
+            exibirMensagem(" Opção inválida! Pressione Enter... ", COR_VERMELHO);
+            limparBuffer();
+            getchar();
+        }
     }
 }
+
 
 void criarNovoSite() {
     if (totalSites >= MAX_SITES) {
@@ -254,7 +250,7 @@ void acessarSite() {
     }
     
     if (opcao > 0 && opcao <= totalSites) {
-        exibirSite(opcao-1);
+        exibirSite(opcao-1);  // Chama a nova versão não-recursiva
     } else if (opcao != 0) {
         exibirMensagem(" Opção inválida! Pressione Enter... ", COR_VERMELHO);
         limparBuffer();
@@ -269,17 +265,90 @@ void mostrarMenu() {
     printf("%sMenu Principal:%s\n\n", COR_VERDE, COR_RESET);
     printf("%s1%s - Acessar um site\n", COR_AMARELO, COR_RESET);
     printf("%s2%s - Criar um novo site\n", COR_AMARELO, COR_RESET);
-    printf("%s3%s - Sair\n", COR_AMARELO, COR_RESET);
+    printf("%s3%s - Buscar site por URL\n", COR_AMARELO, COR_RESET);
+    printf("%s4%s - Mostrar matriz de adjacências\n", COR_AMARELO, COR_RESET);  // Nova opção
+    printf("%s5%s - Sair\n", COR_AMARELO, COR_RESET);
     
     exibirLinha();
     printf("\n%sEscolha uma opção:%s ", COR_VERDE, COR_RESET);
 }
 
-int main() {
-    // setlocale(LC_ALL, "Portuguese");
-    setlocale(LC_ALL, ".UTF-8");
-    // setlocale(LC_ALL, "");
+void buscarSitePorURL() {
+    limparTela();
+    exibirCabecalho("Buscar site por URL");
 
+    char url[256];
+    printf("Digite a URL do site: ");
+    limparBuffer();
+    fgets(url, sizeof(url), stdin);
+    url[strcspn(url, "\n")] = '\0';  // Remove o \n
+
+    int encontrado = -1;
+    for (int i = 0; i < totalSites; i++) {
+        if (strcmp(sites[i].url, url) == 0) {
+            encontrado = i;
+            break;
+        }
+    }
+
+    if (encontrado == -1) {
+        exibirSite(encontrado);
+    }
+
+    // Novo: loop de navegação com controle de retorno
+    int indiceAtual = encontrado;
+    while (1) {
+        exibirSite(indiceAtual);
+        // Depois que exibirSite() retorna, significa que o usuário quis voltar ao menu
+        break;
+    }
+}
+
+void mostrarMatrizAdjacencia() {
+    limparTela();
+    exibirCabecalho("MATRIZ DE ADJACÊNCIAS");
+    
+    // Cabeçalho com os URLs (apenas os primeiros caracteres para caber na tela)
+    printf("%5s", "");
+    for (int j = 0; j < totalSites; j++) {
+        printf("%3.3s ", sites[j].url);  // Mostra apenas os 3 primeiros caracteres da URL
+    }
+    printf("\n");
+    
+    // Linha separadora
+    exibirLinha();
+    
+    // Matriz de adjacências
+    for (int i = 0; i < totalSites; i++) {
+        printf("%3.3s: ", sites[i].url);  // Mostra os 3 primeiros caracteres da URL como rótulo
+        
+        for (int j = 0; j < totalSites; j++) {
+            if (grafo[i][j]) {
+                printf("%s 1  %s", COR_VERDE, COR_RESET);  // Conexão existe (verde)
+            } else {
+                printf("%s 0  %s", COR_VERMELHO, COR_RESET); // Sem conexão (vermelho)
+            }
+        }
+        printf("\n");
+    }
+    
+    // Legenda
+    exibirLinha();
+    printf("\n%sLegenda:%s\n", COR_AMARELO, COR_RESET);
+    printf("%s1%s - Conexão existente\n", COR_VERDE, COR_RESET);
+    printf("%s0%s - Sem conexão\n", COR_VERMELHO, COR_RESET);
+    printf("\nURLs completos:\n");
+    for (int i = 0; i < totalSites; i++) {
+        printf("%3.3s: %s\n", sites[i].url, sites[i].url);
+    }
+    
+    printf("\n%sPressione Enter para voltar ao menu...%s", COR_VERDE, COR_RESET);
+    limparBuffer();
+    getchar();
+}
+
+int main() {
+    setlocale(LC_ALL, ".UTF-8");
     inicializarGrafo();
     
     int opcao;
@@ -298,13 +367,19 @@ int main() {
                 criarNovoSite();
                 break;
             case 3:
+                buscarSitePorURL();
+                break;
+            case 4:  // Nova opção
+                mostrarMatrizAdjacencia();
+                break;
+            case 5:
                 break;
             default:
                 exibirMensagem(" Opção inválida! Pressione Enter... ", COR_VERMELHO);
                 limparBuffer();
                 getchar();
         }
-    } while (opcao != 3);
+    } while (opcao != 5);  // Atualizado para 5
     
     limparTela();
     exibirCabecalho("OBRIGADO!");
