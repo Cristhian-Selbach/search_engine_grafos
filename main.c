@@ -345,6 +345,8 @@ void mostrarMatrizAdjacencia() {
 
 int main() {
     setlocale(LC_ALL, ".UTF-8");
+    // setlocale(LC_ALL, "");
+    // setlocale(LC_ALL, "Portuguese");
     inicializarGrafo();
     
     int opcao;
