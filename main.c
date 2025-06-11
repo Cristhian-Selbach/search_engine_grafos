@@ -119,18 +119,14 @@ void exibirSite(int indice) {
         }
 
         if (opcao > 0 && opcao <= count) {
-            // Navega para o site selecionado (empilha)
             if (topo < MAX_SITES - 1) {
                 historico[++topo] = opcoes[opcao-1];
             }
         } 
         else if (opcao == count+1) {
-            // Volta ao menu principal
             sair = 1;
         } 
         else if (opcao == count+2) {
-            // [Código de deleção permanece o mesmo...]
-            // ... após deletar, seta sair = 1 para voltar ao menu
             sair = 1;
         } 
         else {
@@ -250,7 +246,7 @@ void acessarSite() {
     }
     
     if (opcao > 0 && opcao <= totalSites) {
-        exibirSite(opcao-1);  // Chama a nova versão não-recursiva
+        exibirSite(opcao-1); 
     } else if (opcao != 0) {
         exibirMensagem(" Opção inválida! Pressione Enter... ", COR_VERMELHO);
         limparBuffer();
@@ -369,7 +365,7 @@ int main() {
             case 3:
                 buscarSitePorURL();
                 break;
-            case 4:  // Nova opção
+            case 4:  
                 mostrarMatrizAdjacencia();
                 break;
             case 5:
@@ -379,7 +375,7 @@ int main() {
                 limparBuffer();
                 getchar();
         }
-    } while (opcao != 5);  // Atualizado para 5
+    } while (opcao != 5);
     
     limparTela();
     exibirCabecalho("OBRIGADO!");
